@@ -57,15 +57,15 @@ section{scroll-margin-top:var(--header)}
 
 /* Hero */
 .hero{padding:88px 0 80px}
-.hero-inner{display:flex;flex-direction:column;gap:26px;max-width:860px}
+.hero-inner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:26px;max-width:900px;margin:0 auto}
 .hero h1{font-size:clamp(40px,6vw,72px);line-height:1.03;letter-spacing:-.04em}
-.hero p{margin:0;max-width:40rem;font-size:19px;color:var(--ink-2)}
-.ctas{display:flex;flex-wrap:wrap;gap:12px;padding-top:6px}
+.hero p{margin:0 auto;max-width:40rem;font-size:19px;color:var(--ink-2)}
+.ctas{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;padding-top:6px}
 .btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 24px;border-radius:999px;font-weight:600;font-size:16px;text-decoration:none;border:1.5px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;font-family:var(--body)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
 .btn:not(.primary):hover{background:var(--ink);color:#fff}
-.stack{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:13px;color:var(--muted);padding-top:10px}
+.stack{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;font-family:var(--mono);font-size:13px;color:var(--muted);padding-top:10px}
 
 /* Projects */
 .projects{padding:96px 0;background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -142,11 +142,24 @@ section{scroll-margin-top:var(--header)}
 
 /* Contact */
 .contact{padding:104px 0;background:var(--ink);color:#F4F7FB}
-.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:48px;align-items:end}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:56px;align-items:start}
 .contact h2{font-size:clamp(40px,5vw,64px);line-height:1.02;letter-spacing:-.04em}
 .contact .kicker{color:var(--sky-soft)}
 .contact p{margin:16px 0 0;color:#C3CEDD;font-size:18px;max-width:30rem}
-.contact-links{display:flex;flex-direction:column;gap:12px}
+.contact-links{display:flex;flex-direction:column;gap:12px;margin-top:36px}
+.contact-form{background:#fff;color:var(--ink);border-radius:18px;padding:32px;display:flex;flex-direction:column;gap:18px}
+.contact-form h3{font-size:24px;letter-spacing:-.02em}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:14px;font-weight:600;color:var(--ink-2)}
+.field input,.field textarea{font:16px/1.5 var(--body);color:var(--ink);background:var(--ground);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;width:100%}
+.field textarea{resize:vertical;min-height:132px}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--accent-soft)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.contact-form .btn{align-self:flex-start}
+.contact-form .btn[disabled]{opacity:.6;cursor:wait}
+.form-status{margin:0!important;font-size:15px!important;color:var(--ink-2)!important;min-height:1.4em}
+.form-status.ok{color:#17703A!important}.form-status.err{color:#B3261E!important}
+@media (max-width:520px){.contact-form{padding:22px}}
 .contact-links a{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:64px;padding:0 24px;border-radius:14px;border:1.5px solid #2A3D58;text-decoration:none;font-weight:500;font-size:18px;color:#F4F7FB}
 .contact-links a:hover{border-color:var(--sky-soft);color:var(--sky-soft)}
 .contact-links a.first{background:#F4F7FB;color:var(--ink);border-color:#F4F7FB}
@@ -154,6 +167,32 @@ section{scroll-margin-top:var(--header)}
 .contact-links small{font-family:var(--mono);font-size:13px;color:inherit;opacity:.75}
 footer{background:var(--ink);color:#8C9AB0;border-top:1px solid #22344D;font-size:14px}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:24px;padding-bottom:24px}
+
+/* Contact form */
+const form = document.getElementById("contact-form");
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const status = document.getElementById("cf-status");
+  const btn = document.getElementById("cf-submit");
+  const data = Object.fromEntries(new FormData(form).entries());
+  if (data._honey) return;
+  btn.disabled = true; status.className = "form-status"; status.textContent = t("form.sending");
+  try {
+    const res = await fetch(CONTACT.form, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        name: data.name, email: data.email, message: data.message,
+        _replyto: data.email, _subject: "Portfolio — " + data.name, _template: "table", _captcha: "false"
+      })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || String(json.success) === "false") throw new Error(json.message || res.status);
+    form.reset(); status.className = "form-status ok"; status.textContent = t("form.ok");
+  } catch (err) {
+    status.className = "form-status err"; status.textContent = t("form.err");
+  } finally { btn.disabled = false; }
+});
 
 /* Lightbox */
 dialog.lightbox{border:0;padding:0;background:transparent;max-width:min(1400px,96vw);width:96vw;color:#fff}
@@ -257,8 +296,17 @@ dialog.lightbox::backdrop{background:rgba(8,16,30,.95)}
         <span class="kicker" data-i18n="contact.kicker">Contact</span>
         <h2 style="margin-top:16px" data-i18n="contact.title">Let's talk.</h2>
         <p data-i18n="contact.p">Open to remote roles worldwide, hybrid roles in Córdoba and freelance BI projects.</p>
+        <div class="contact-links" id="contact-links"></div>
       </div>
-      <div class="contact-links" id="contact-links"></div>
+      <form class="contact-form" id="contact-form">
+        <h3 data-i18n="form.title">Send me a message</h3>
+        <div class="field"><label for="cf-name" data-i18n="form.name">Name</label><input id="cf-name" name="name" type="text" autocomplete="name" required maxlength="120"></div>
+        <div class="field"><label for="cf-email" data-i18n="form.email">Email</label><input id="cf-email" name="email" type="email" autocomplete="email" required maxlength="160"></div>
+        <div class="field"><label for="cf-msg" data-i18n="form.message">Message</label><textarea id="cf-msg" name="message" rows="5" required maxlength="4000"></textarea></div>
+        <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn primary" type="submit" id="cf-submit"><span data-i18n="form.send">Send message</span></button>
+        <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
+      </form>
     </div>
   </section>
 </main>
@@ -293,7 +341,9 @@ const CONTACT = {
   linkedin: "https://www.linkedin.com/in/lucio-reyna-novillo",
   cv: "assets/Resume_Lucio_Reyna.pdf",
   github: "",
-  website: "https://www.introdatabs.com/"
+  website: "https://www.introdatabs.com/",
+  /* Contact form endpoint (FormSubmit). After activation, replace the email with the alias FormSubmit sends. */
+  form: "https://formsubmit.co/ajax/lucioreynanovillo@gmail.com"
 };
 
 const T = {
@@ -322,7 +372,9 @@ const T = {
     "exp.6.when":"Education","exp.6.role":"Business Administration","exp.6.org":"Universidad Siglo 21 · Data Analytics: Power BI & SQL, Platzi (2023)",
     "contact.kicker":"Contact","contact.title":"Let's talk.",
     "contact.p":"Open to remote roles worldwide, hybrid roles in Córdoba and freelance BI projects.",
-    "contact.cv":"Download my CV","contact.website":"IntroData — consulting"
+    "contact.cv":"Download my CV","contact.website":"IntroData — consulting",
+    "form.title":"Send me a message","form.name":"Name","form.email":"Email","form.message":"Message","form.send":"Send message",
+    "form.sending":"Sending…","form.ok":"Thanks! Your message was sent. I'll get back to you soon.","form.err":"The message couldn't be sent. Please try again or reach me on LinkedIn."
   },
   es: {
     "brand":"Data & Business Intelligence",
@@ -349,7 +401,9 @@ const T = {
     "exp.6.when":"Formación","exp.6.role":"Administración de Empresas","exp.6.org":"Universidad Siglo 21 · Data Analytics: Power BI & SQL, Platzi (2023)",
     "contact.kicker":"Contacto","contact.title":"Hablemos.",
     "contact.p":"Disponible para roles remotos para el exterior, híbridos en Córdoba y proyectos freelance de BI.",
-    "contact.cv":"Descargar mi CV","contact.website":"IntroData — consultora"
+    "contact.cv":"Descargar mi CV","contact.website":"IntroData — consultora",
+    "form.title":"Escribime un mensaje","form.name":"Nombre","form.email":"Email","form.message":"Mensaje","form.send":"Enviar mensaje",
+    "form.sending":"Enviando…","form.ok":"¡Gracias! Tu mensaje se envió, te respondo a la brevedad.","form.err":"No se pudo enviar el mensaje. Probá de nuevo o escribime por LinkedIn."
   }
 };
 
