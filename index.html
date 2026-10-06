@@ -149,6 +149,12 @@ section{scroll-margin-top:var(--header)}
 .contact-links{display:flex;flex-direction:column;gap:12px;margin-top:36px}
 .contact-form{background:#fff;color:var(--ink);border-radius:18px;padding:32px;display:flex;flex-direction:column;gap:18px}
 .contact-form h3{font-size:24px;letter-spacing:-.02em}
+.form-fields{display:flex;flex-direction:column;gap:18px}
+.form-fields[hidden],.form-done[hidden]{display:none}
+.form-done{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:28px 0 12px}
+.form-done h3{font-size:30px;outline:none}
+.form-done p{margin:0!important;color:var(--ink-2)!important;font-size:17px!important}
+.done-icon{width:56px;height:56px;border-radius:999px;background:#E3F4EA;color:#17703A;display:inline-flex;align-items:center;justify-content:center}
 .field{display:flex;flex-direction:column;gap:6px}
 .field label{font-size:14px;font-weight:600;color:var(--ink-2)}
 .field input,.field textarea{font:16px/1.5 var(--body);color:var(--ink);background:var(--ground);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;width:100%}
@@ -167,32 +173,6 @@ section{scroll-margin-top:var(--header)}
 .contact-links small{font-family:var(--mono);font-size:13px;color:inherit;opacity:.75}
 footer{background:var(--ink);color:#8C9AB0;border-top:1px solid #22344D;font-size:14px}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding-top:24px;padding-bottom:24px}
-
-/* Contact form */
-const form = document.getElementById("contact-form");
-form.addEventListener("submit", async e => {
-  e.preventDefault();
-  const status = document.getElementById("cf-status");
-  const btn = document.getElementById("cf-submit");
-  const data = Object.fromEntries(new FormData(form).entries());
-  if (data._honey) return;
-  btn.disabled = true; status.className = "form-status"; status.textContent = t("form.sending");
-  try {
-    const res = await fetch(CONTACT.form, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({
-        name: data.name, email: data.email, message: data.message,
-        _replyto: data.email, _subject: "Portfolio — " + data.name, _template: "table", _captcha: "false"
-      })
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || String(json.success) === "false") throw new Error(json.message || res.status);
-    form.reset(); status.className = "form-status ok"; status.textContent = t("form.ok");
-  } catch (err) {
-    status.className = "form-status err"; status.textContent = t("form.err");
-  } finally { btn.disabled = false; }
-});
 
 /* Lightbox */
 dialog.lightbox{border:0;padding:0;background:transparent;max-width:min(1400px,96vw);width:96vw;color:#fff}
@@ -299,6 +279,7 @@ dialog.lightbox::backdrop{background:rgba(8,16,30,.95)}
         <div class="contact-links" id="contact-links"></div>
       </div>
       <form class="contact-form" id="contact-form">
+        <div class="form-fields" id="cf-fields">
         <h3 data-i18n="form.title">Send me a message</h3>
         <div class="field"><label for="cf-name" data-i18n="form.name">Name</label><input id="cf-name" name="name" type="text" autocomplete="name" required maxlength="120"></div>
         <div class="field"><label for="cf-email" data-i18n="form.email">Email</label><input id="cf-email" name="email" type="email" autocomplete="email" required maxlength="160"></div>
@@ -306,6 +287,13 @@ dialog.lightbox::backdrop{background:rgba(8,16,30,.95)}
         <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button class="btn primary" type="submit" id="cf-submit"><span data-i18n="form.send">Send message</span></button>
         <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
+        </div>
+        <div class="form-done" id="cf-done" hidden>
+          <span class="done-icon" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <h3 id="cf-done-title" tabindex="-1" data-i18n="form.doneTitle">Message sent!</h3>
+          <p data-i18n="form.ok">Thanks for reaching out. I'll get back to you soon.</p>
+          <button type="button" class="btn" id="cf-again" data-i18n="form.again">Send another message</button>
+        </div>
       </form>
     </div>
   </section>
@@ -374,7 +362,7 @@ const T = {
     "contact.p":"Open to remote roles worldwide, hybrid roles in Córdoba and freelance BI projects.",
     "contact.cv":"Download my CV","contact.website":"IntroData — consulting",
     "form.title":"Send me a message","form.name":"Name","form.email":"Email","form.message":"Message","form.send":"Send message",
-    "form.sending":"Sending…","form.ok":"Thanks! Your message was sent. I'll get back to you soon.","form.err":"The message couldn't be sent. Please try again or reach me on LinkedIn."
+    "form.sending":"Sending…","form.ok":"Thanks for reaching out. I'll get back to you soon.","form.doneTitle":"Message sent!","form.again":"Send another message","form.inactive":"The form isn't activated yet: check your inbox and click “Activate Form”.","form.err":"The message couldn't be sent. Please try again or reach me on LinkedIn."
   },
   es: {
     "brand":"Data & Business Intelligence",
@@ -403,7 +391,7 @@ const T = {
     "contact.p":"Disponible para roles remotos para el exterior, híbridos en Córdoba y proyectos freelance de BI.",
     "contact.cv":"Descargar mi CV","contact.website":"IntroData — consultora",
     "form.title":"Escribime un mensaje","form.name":"Nombre","form.email":"Email","form.message":"Mensaje","form.send":"Enviar mensaje",
-    "form.sending":"Enviando…","form.ok":"¡Gracias! Tu mensaje se envió, te respondo a la brevedad.","form.err":"No se pudo enviar el mensaje. Probá de nuevo o escribime por LinkedIn."
+    "form.sending":"Enviando…","form.ok":"Gracias por escribirme, te respondo a la brevedad.","form.doneTitle":"¡Mensaje enviado!","form.again":"Enviar otro mensaje","form.inactive":"El formulario todavía no está activado: revisá tu email y tocá “Activate Form”.","form.err":"No se pudo enviar el mensaje. Probá de nuevo o escribime por LinkedIn."
   }
 };
 
@@ -512,6 +500,41 @@ function setLang(l) {
   history.replaceState(null, "", url.toString());
   applyStatic(); renderContact(); renderProjects();
 }
+
+/* Contact form */
+const form = document.getElementById("contact-form");
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const status = document.getElementById("cf-status");
+  const btn = document.getElementById("cf-submit");
+  const data = Object.fromEntries(new FormData(form).entries());
+  if (data._honey) return;
+  btn.disabled = true; status.className = "form-status"; status.textContent = t("form.sending");
+  try {
+    const res = await fetch(CONTACT.form, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        name: data.name, email: data.email, message: data.message,
+        _replyto: data.email, _subject: "Portfolio — " + data.name, _template: "table", _captcha: "false"
+      })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || String(json.success) === "false") throw new Error(json.message || String(res.status));
+    form.reset(); status.className = "form-status"; status.textContent = "";
+    document.getElementById("cf-fields").hidden = true;
+    document.getElementById("cf-done").hidden = false;
+    document.getElementById("cf-done-title").focus();
+  } catch (err) {
+    status.className = "form-status err";
+    status.textContent = /activat/i.test(err.message) ? t("form.inactive") : t("form.err");
+  } finally { btn.disabled = false; }
+});
+document.getElementById("cf-again").addEventListener("click", () => {
+  document.getElementById("cf-done").hidden = true;
+  document.getElementById("cf-fields").hidden = false;
+  document.getElementById("cf-name").focus();
+});
 
 /* Lightbox */
 const lb = document.getElementById("lightbox");
