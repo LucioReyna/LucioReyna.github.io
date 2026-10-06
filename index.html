@@ -165,6 +165,7 @@ section{scroll-margin-top:var(--header)}
 .contact-form .btn[disabled]{opacity:.6;cursor:wait}
 .form-status{margin:0!important;font-size:15px!important;color:var(--ink-2)!important;min-height:1.4em}
 .form-status.ok{color:#17703A!important}.form-status.err{color:#B3261E!important}
+.form-status a{color:var(--accent);font-weight:600}
 @media (max-width:520px){.contact-form{padding:22px}}
 .contact-links a{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:64px;padding:0 24px;border-radius:14px;border:1.5px solid #2A3D58;text-decoration:none;font-weight:500;font-size:18px;color:#F4F7FB}
 .contact-links a:hover{border-color:var(--sky-soft);color:var(--sky-soft)}
@@ -278,17 +279,13 @@ dialog.lightbox::backdrop{background:rgba(8,16,30,.95)}
         <p data-i18n="contact.p">Open to remote roles worldwide, hybrid roles in Córdoba and freelance BI projects.</p>
         <div class="contact-links" id="contact-links"></div>
       </div>
-      <form class="contact-form" id="contact-form" method="POST" action="https://formsubmit.co/lucioreynanovillo@gmail.com">
+      <form class="contact-form" id="contact-form">
         <div class="form-fields" id="cf-fields">
         <h3 data-i18n="form.title">Send me a message</h3>
         <div class="field"><label for="cf-name" data-i18n="form.name">Name</label><input id="cf-name" name="name" type="text" autocomplete="name" required maxlength="120"></div>
         <div class="field"><label for="cf-email" data-i18n="form.email">Email</label><input id="cf-email" name="email" type="email" autocomplete="email" required maxlength="160"></div>
         <div class="field"><label for="cf-msg" data-i18n="form.message">Message</label><textarea id="cf-msg" name="message" rows="5" required maxlength="4000"></textarea></div>
-        <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <input type="hidden" name="_subject" value="Portfolio — new message">
-        <input type="hidden" name="_template" value="table">
-        <input type="hidden" name="_captcha" value="false">
-        <input type="hidden" name="_next" value="https://lucioreyna.github.io/?sent=1#contact">
+        <input class="hp" type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" style="display:none">
         <button class="btn primary" type="submit" id="cf-submit"><span data-i18n="form.send">Send message</span></button>
         <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
         </div>
@@ -334,8 +331,9 @@ const CONTACT = {
   cv: "assets/Resume_Lucio_Reyna.pdf",
   github: "",
   website: "https://www.introdatabs.com/",
-  /* Contact form endpoint (FormSubmit). After activation, replace the email with the alias FormSubmit sends. */
-  form: "https://formsubmit.co/ajax/lucioreynanovillo@gmail.com"
+  /* Contact form (Web3Forms). Paste the access key from web3forms.com; while empty, the form falls back to email. */
+  formKey: "",
+  formEmail: "lucioreynanovillo@gmail.com"
 };
 
 const T = {
@@ -366,7 +364,7 @@ const T = {
     "contact.p":"Open to remote roles worldwide, hybrid roles in Córdoba and freelance BI projects.",
     "contact.cv":"Download my CV","contact.website":"IntroData — consulting",
     "form.title":"Send me a message","form.name":"Name","form.email":"Email","form.message":"Message","form.send":"Send message",
-    "form.sending":"Sending…","form.ok":"Thanks for reaching out. I'll get back to you soon.","form.doneTitle":"Message sent!","form.again":"Send another message","form.inactive":"The form isn't activated yet: check your inbox and click “Activate Form”.","form.err":"The message couldn't be sent. Please try again or reach me on LinkedIn."
+    "form.sending":"Sending…","form.ok":"Thanks for reaching out. I'll get back to you soon.","form.doneTitle":"Message sent!","form.again":"Send another message","form.fallback":"The message couldn't be sent from here. Please email me at","form.err":"The message couldn't be sent. Please try again or reach me on LinkedIn."
   },
   es: {
     "brand":"Data & Business Intelligence",
@@ -395,7 +393,7 @@ const T = {
     "contact.p":"Disponible para roles remotos para el exterior, híbridos en Córdoba y proyectos freelance de BI.",
     "contact.cv":"Descargar mi CV","contact.website":"IntroData — consultora",
     "form.title":"Escribime un mensaje","form.name":"Nombre","form.email":"Email","form.message":"Mensaje","form.send":"Enviar mensaje",
-    "form.sending":"Enviando…","form.ok":"Gracias por escribirme, te respondo a la brevedad.","form.doneTitle":"¡Mensaje enviado!","form.again":"Enviar otro mensaje","form.inactive":"El formulario todavía no está activado: revisá tu email y tocá “Activate Form”.","form.err":"No se pudo enviar el mensaje. Probá de nuevo o escribime por LinkedIn."
+    "form.sending":"Enviando…","form.ok":"Gracias por escribirme, te respondo a la brevedad.","form.doneTitle":"¡Mensaje enviado!","form.again":"Enviar otro mensaje","form.fallback":"No se pudo enviar desde acá. Escribime directamente a","form.err":"No se pudo enviar el mensaje. Probá de nuevo o escribime por LinkedIn."
   }
 };
 
@@ -505,59 +503,50 @@ function setLang(l) {
   applyStatic(); renderContact(); renderProjects();
 }
 
-/* Contact form: AJAX first; if that fails for any reason other than pending activation,
-   fall back to a normal form POST, which FormSubmit handles and redirects back with ?sent=1. */
+/* Contact form (Web3Forms). If it can't send, show the email address with a prefilled mailto link. */
 const form = document.getElementById("contact-form");
 function showSent() {
   document.getElementById("cf-fields").hidden = true;
   document.getElementById("cf-done").hidden = false;
+  document.getElementById("cf-done-title").focus();
 }
-function nativeSubmit(data) {
-  form.querySelector('[name="_subject"]').value = "Portfolio — " + data.name;
-  form.querySelector('[name="_next"]').value = `${location.origin}${location.pathname}?lang=${lang}&sent=1#contact`;
-  HTMLFormElement.prototype.submit.call(form);
+function showFallback(data) {
+  const status = document.getElementById("cf-status");
+  const href = `mailto:${CONTACT.formEmail}?subject=${encodeURIComponent("Portfolio — " + (data.name || ""))}&body=${encodeURIComponent((data.message || "") + "\n\n" + (data.name || "") + " · " + (data.email || ""))}`;
+  status.className = "form-status err";
+  status.innerHTML = `${esc(t("form.fallback"))} <a href="${esc(href)}">${esc(CONTACT.formEmail)}</a>`;
 }
 form.addEventListener("submit", async e => {
   e.preventDefault();
   const status = document.getElementById("cf-status");
   const btn = document.getElementById("cf-submit");
   const data = Object.fromEntries(new FormData(form).entries());
-  if (data._honey) return;
+  if (data.botcheck) return;
+  if (!CONTACT.formKey) { showFallback(data); return; }
   btn.disabled = true; status.className = "form-status"; status.textContent = t("form.sending");
-  let json = {}, res = null;
   try {
-    res = await fetch(CONTACT.form, {
+    const res = await fetch("https://api.web3forms.com/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({
-        name: data.name, email: data.email, message: data.message,
-        _replyto: data.email, _subject: "Portfolio — " + data.name, _template: "table", _captcha: "false"
+        access_key: CONTACT.formKey,
+        subject: "Portfolio — " + data.name,
+        from_name: "Portfolio lucioreyna.github.io",
+        name: data.name, email: data.email, message: data.message
       })
     });
-    json = await res.json().catch(() => ({}));
-  } catch (err) { res = null; }
-  const ok = res && res.ok && String(json.success) !== "false";
-  if (ok) {
-    form.reset(); status.textContent = ""; showSent();
-    document.getElementById("cf-done-title").focus();
-    btn.disabled = false; return;
-  }
-  if (/activat/i.test(json.message || "")) {
-    status.className = "form-status err"; status.textContent = t("form.inactive");
-    btn.disabled = false; return;
-  }
-  nativeSubmit(data);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success !== true) throw new Error(json.message || String(res.status));
+    form.reset(); status.className = "form-status"; status.textContent = ""; showSent();
+  } catch (err) {
+    showFallback(data);
+  } finally { btn.disabled = false; }
 });
 document.getElementById("cf-again").addEventListener("click", () => {
   document.getElementById("cf-done").hidden = true;
   document.getElementById("cf-fields").hidden = false;
   document.getElementById("cf-name").focus();
 });
-if (new URLSearchParams(location.search).get("sent") === "1") {
-  showSent();
-  const url = new URL(location.href); url.searchParams.delete("sent");
-  history.replaceState(null, "", url.toString());
-}
 
 /* Lightbox */
 const lb = document.getElementById("lightbox");
