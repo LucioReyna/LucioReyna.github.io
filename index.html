@@ -278,13 +278,17 @@ dialog.lightbox::backdrop{background:rgba(8,16,30,.95)}
         <p data-i18n="contact.p">Open to remote roles worldwide, hybrid roles in Córdoba and freelance BI projects.</p>
         <div class="contact-links" id="contact-links"></div>
       </div>
-      <form class="contact-form" id="contact-form">
+      <form class="contact-form" id="contact-form" method="POST" action="https://formsubmit.co/lucioreynanovillo@gmail.com">
         <div class="form-fields" id="cf-fields">
         <h3 data-i18n="form.title">Send me a message</h3>
         <div class="field"><label for="cf-name" data-i18n="form.name">Name</label><input id="cf-name" name="name" type="text" autocomplete="name" required maxlength="120"></div>
         <div class="field"><label for="cf-email" data-i18n="form.email">Email</label><input id="cf-email" name="email" type="email" autocomplete="email" required maxlength="160"></div>
         <div class="field"><label for="cf-msg" data-i18n="form.message">Message</label><textarea id="cf-msg" name="message" rows="5" required maxlength="4000"></textarea></div>
         <input class="hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <input type="hidden" name="_subject" value="Portfolio — new message">
+        <input type="hidden" name="_template" value="table">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_next" value="https://lucioreyna.github.io/?sent=1#contact">
         <button class="btn primary" type="submit" id="cf-submit"><span data-i18n="form.send">Send message</span></button>
         <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
         </div>
@@ -501,8 +505,18 @@ function setLang(l) {
   applyStatic(); renderContact(); renderProjects();
 }
 
-/* Contact form */
+/* Contact form: AJAX first; if that fails for any reason other than pending activation,
+   fall back to a normal form POST, which FormSubmit handles and redirects back with ?sent=1. */
 const form = document.getElementById("contact-form");
+function showSent() {
+  document.getElementById("cf-fields").hidden = true;
+  document.getElementById("cf-done").hidden = false;
+}
+function nativeSubmit(data) {
+  form.querySelector('[name="_subject"]').value = "Portfolio — " + data.name;
+  form.querySelector('[name="_next"]').value = `${location.origin}${location.pathname}?lang=${lang}&sent=1#contact`;
+  HTMLFormElement.prototype.submit.call(form);
+}
 form.addEventListener("submit", async e => {
   e.preventDefault();
   const status = document.getElementById("cf-status");
@@ -510,8 +524,9 @@ form.addEventListener("submit", async e => {
   const data = Object.fromEntries(new FormData(form).entries());
   if (data._honey) return;
   btn.disabled = true; status.className = "form-status"; status.textContent = t("form.sending");
+  let json = {}, res = null;
   try {
-    const res = await fetch(CONTACT.form, {
+    res = await fetch(CONTACT.form, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({
@@ -519,22 +534,30 @@ form.addEventListener("submit", async e => {
         _replyto: data.email, _subject: "Portfolio — " + data.name, _template: "table", _captcha: "false"
       })
     });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || String(json.success) === "false") throw new Error(json.message || String(res.status));
-    form.reset(); status.className = "form-status"; status.textContent = "";
-    document.getElementById("cf-fields").hidden = true;
-    document.getElementById("cf-done").hidden = false;
+    json = await res.json().catch(() => ({}));
+  } catch (err) { res = null; }
+  const ok = res && res.ok && String(json.success) !== "false";
+  if (ok) {
+    form.reset(); status.textContent = ""; showSent();
     document.getElementById("cf-done-title").focus();
-  } catch (err) {
-    status.className = "form-status err";
-    status.textContent = /activat/i.test(err.message) ? t("form.inactive") : t("form.err");
-  } finally { btn.disabled = false; }
+    btn.disabled = false; return;
+  }
+  if (/activat/i.test(json.message || "")) {
+    status.className = "form-status err"; status.textContent = t("form.inactive");
+    btn.disabled = false; return;
+  }
+  nativeSubmit(data);
 });
 document.getElementById("cf-again").addEventListener("click", () => {
   document.getElementById("cf-done").hidden = true;
   document.getElementById("cf-fields").hidden = false;
   document.getElementById("cf-name").focus();
 });
+if (new URLSearchParams(location.search).get("sent") === "1") {
+  showSent();
+  const url = new URL(location.href); url.searchParams.delete("sent");
+  history.replaceState(null, "", url.toString());
+}
 
 /* Lightbox */
 const lb = document.getElementById("lightbox");
