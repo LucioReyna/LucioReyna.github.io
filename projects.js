@@ -150,5 +150,47 @@ window.PROJECTS = [
       ],
       captions: ["Resumen ejecutivo: antigüedad del stock y conclusiones clave", "Calidad de datos: detección de duplicados", "Detalle por unidad"]
     }
+  },
+  {
+    slug: "weekly-scorecard",
+    images: 1,
+    tags: ["Power BI", "DAX", "Time intelligence", "Azure Analysis Services", "Subscriptions"],
+    en: {
+      title: "Weekly Performance Scorecard",
+      context: "Hearing-care retail network · 5 offices",
+      summary: "A one-page scorecard emailed every Monday: last week's results, this week's agenda risk and an expected-sales forecast.",
+      body: [
+        "Weekly Power BI scorecard for two roles in a hearing-care retail network: front office associates (scheduling, confirmations, show rate) and specialists (conversion and sales). It reaches every stakeholder as an email subscription each Monday, and each one filters by office.",
+        "Built over a live Azure Analysis Services connection to a model that couldn't be modified, so all the logic lives in DAX measures. Every measure is anchored to relative weeks (last week, the week before, this week, last 4 weeks), so the Monday email always shows the right period with no manual updates. I prototyped the page first to agree on KPIs, layout and time windows with the stakeholder, then built and validated one measure at a time against a table by office.",
+        "Expected sales = this week's scheduled appointments × appointment-to-buyer conversion × value per buyer, with both rates taken from the last 4 weeks at network level so a few sales in a small office don't distort the forecast. The conversion uses the same denominator as the forecast, so it isn't biased."
+      ],
+      highlights: [
+        "Last week vs prior week: seven KPI cards with dynamic delta text and color",
+        "This week: confirmations, agenda saturation, blocked hours and a tooltip with the call list of unconfirmed appointments for the front office",
+        "Last 4 weeks: where scheduled appointments end up by status, and conversion by office against the network average",
+        "Data-quality flags built in, and comparisons that aren't like-for-like shown as neutral instead of good or bad",
+        "Solved filter overrides inside base measures, separate measure patterns for cards and date-axis charts, and a one-row-per-appointment tooltip without duplicates"
+      ],
+      captions: ["Weekly scorecard: last week, this week, office breakdown and last 4 weeks"]
+    },
+    es: {
+      tags: ["Power BI", "DAX", "Time intelligence", "Azure Analysis Services", "Suscripciones"],
+      title: "Scorecard semanal de performance",
+      context: "Red minorista de salud auditiva · 5 sucursales",
+      summary: "Un scorecard de una página que llega por mail cada lunes: resultados de la semana pasada, riesgo de la agenda de esta semana y una proyección de ventas.",
+      body: [
+        "Scorecard semanal en Power BI para dos roles de una red minorista de salud auditiva: el front office (agenda, confirmaciones, show rate) y los especialistas (conversión y ventas). Llega a cada stakeholder como suscripción por mail todos los lunes, y cada uno lo filtra por sucursal.",
+        "Construido sobre una conexión en vivo a Azure Analysis Services, con un modelo que no se podía modificar, así que toda la lógica está en medidas DAX. Cada medida se ancla a semanas relativas (semana pasada, la anterior, esta semana, últimas 4 semanas), así el mail del lunes siempre muestra el período correcto sin actualizaciones manuales. Primero armé un prototipo de la página para acordar KPIs, diseño y ventanas de tiempo con el stakeholder; después construí y validé una medida por vez contra una tabla por sucursal.",
+        "Ventas esperadas = citas agendadas de esta semana × conversión de cita a comprador × valor por comprador, con ambas tasas tomadas de las últimas 4 semanas a nivel red, para que pocas ventas en una sucursal chica no distorsionen la proyección. La conversión usa el mismo denominador que la proyección, así no queda sesgada."
+      ],
+      highlights: [
+        "Semana pasada vs. la anterior: siete tarjetas de KPI con texto y color de variación dinámicos",
+        "Esta semana: confirmaciones, saturación de agenda, horas bloqueadas y un tooltip con la lista de citas sin confirmar para que llame el front office",
+        "Últimas 4 semanas: en qué terminan las citas agendadas según su estado, y conversión por sucursal contra el promedio de la red",
+        "Alertas de calidad de datos integradas en la página, y comparaciones que no son equivalentes mostradas en neutro en vez de buenas o malas",
+        "Resolví filtros internos que pisaban los filtros externos, usé patrones de medida distintos para tarjetas y para gráficos con eje de fecha, y armé un tooltip con una fila por cita sin duplicados"
+      ],
+      captions: ["Scorecard semanal: semana pasada, esta semana, desglose por sucursal y últimas 4 semanas"]
+    }
   }
 ];
